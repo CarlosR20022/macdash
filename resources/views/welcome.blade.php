@@ -14,12 +14,12 @@
 </head>
 <body class="bg-[#111827] text-white flex h-screen overflow-hidden">
 
-    <aside class="w-64 bg-[#1F2937] border-r-2 border-white flex flex-col p-6 shrink-0 z-10">
-            <div class="mb-2 flex flex-col items-center mt-0">
-             <img src="{{ asset('img/MacDash.png') }}" alt="MacDash Logo" class="w-45 h-45 object-contain mb-1">
+    <aside class="w-64 bg-[#1F2937] border-r-2 border-white flex flex-col pt-2 px-6 pb-6 shrink-0 z-10">
+        <div class="mb-1 flex flex-col items-center mt-[-10px]">
+             <img src="{{ asset('img/MacDash.png') }}" alt="MacDash Logo" class="w-45 h-45 object-contain mb-0">
         </div>
 
-        <nav class="space-y-6">
+        <nav class="space-y-6 mt-4">
             <button onclick="toggleModal('modalNuevaTarea')" class="w-full bg-[#5A8BB5] hover:bg-[#4A7A9E] border-[3px] border-slate-900 rounded-xl p-4 flex flex-col items-center justify-center transition-all shadow-[0_4px_0_rgb(15,23,42)] active:translate-y-1 active:shadow-none">
                 <img src="{{ asset('img/tarea.png') }}" alt="Nueva Tarea" class="w-14 h-14 mb-2">
                 <span class="text-white font-bold text-lg">Nueva tarea</span>
@@ -38,11 +38,11 @@
     </aside>
 
     <main class="flex-1 flex flex-col min-w-0 bg-[#0F172A]">
-    <header class="h-24 border-b-2 border-white flex items-center justify-between px-10 bg-[#0F172A] z-10 relative">
-                <input type="text" placeholder="BUSCAR TAREA O CLIENTE" class="bg-slate-200 text-slate-800 placeholder-slate-500 rounded-lg px-4 py-3 w-[400px] focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-base">
+        <header class="h-24 border-b-2 border-white flex items-center justify-between px-10 bg-[#0F172A] z-10 relative">
+            <input type="text" placeholder="BUSCAR TAREA O CLIENTE" class="bg-slate-200 text-slate-800 placeholder-slate-500 rounded-lg px-4 py-3 w-[400px] focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-base">
             
             <div class="flex items-center gap-8">
-                <span class="text-2xl font-medium">{{ now()->format('h:i a') }}</span>
+                <span id="reloj-macdash" class="text-2xl font-medium">Cargando...</span>
                 <div class="flex items-center gap-4">
                     <img src="{{ asset('img/perfil.png') }}" alt="Avatar" class="w-12 h-12 rounded-full border-2 border-slate-400">
                     <span class="font-bold text-xl">{{ Auth::user()->name }}</span>                    
@@ -91,7 +91,9 @@
                         <tr>
                             <td class="p-4 border-slate-400 border">{{ $tarea->id }}</td>
                             <td class="p-4 border-slate-400 border">{{ $tarea->nombre_pedido }}</td>
-                            <td class="p-4 border-slate-400 border">{{ $tarea->fecha_entrega }}</td>
+                            <td class="p-4 border-slate-400 border text-sm font-medium">
+                                {{ \Carbon\Carbon::parse($tarea->fecha_entrega)->format('j') }} de {{ ucfirst(\Carbon\Carbon::parse($tarea->fecha_entrega)->locale('es')->monthName) }} {{ \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y') }}
+                            </td>
                             <td class="p-4 border-slate-400 border text-center">
                                 <button onclick="abrirDetalles({{ $tarea->id }})" class="underline decoration-white hover:text-sky-300 transition-colors">Detalles</button>
                             </td>
@@ -127,7 +129,7 @@
         <div class="bg-[#1F2937] w-full max-w-lg rounded-xl border-2 border-slate-600 shadow-2xl p-6">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <img src="{{ asset('img/tarea.png') }}" class="w-6 h-6"> Nueva Orden
+                    <img src="{{ asset('img/tarea.png') }}" class="w-6 h-6"> Nueva Tarea
                 </h3>
                 <button onclick="toggleModal('modalNuevaTarea')" class="text-slate-400 hover:text-white font-bold text-xl">✕</button>
             </div>
@@ -216,88 +218,111 @@
     </div>
 
     <script>
-        function toggleModal(modalID) {
-            const modal = document.getElementById(modalID);
-            modal.classList.toggle('hidden');
-        }
+    // --- FUNCIONES DE MODALES Y AJAX ---
+    function toggleModal(modalID) {
+        const modal = document.getElementById(modalID);
+        modal.classList.toggle('hidden');
+    }
 
-        function abrirDetalles(id) {
-            fetch(`/tareas/${id}`)
-                .then(response => {
-                    if (!response.ok) throw new Error('Error al cargar');
-                    return response.json();
-                })
-                .then(task => {
-                    document.getElementById('detId').innerText = "#" + String(task.id).padStart(3, '0');
-                    document.getElementById('detCliente').innerText = task.cliente;
-                    document.getElementById('detTel').innerText = task.telefono || 'N/A';
-                    document.getElementById('detPedido').innerText = task.nombre_pedido;
-                    document.getElementById('detFechaToma').innerText = task.fecha_toma;
-                    document.getElementById('detFechaEntrega').innerText = task.fecha_entrega;
-                    document.getElementById('detDesc').innerText = task.detalles_adicionales || 'N/A';
-                    toggleModal('modalDetallesTarea');
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('No se pudieron cargar los detalles.');
-                });
-        }
-
-        function cambiarEstado(id) {
-            const popup = document.getElementById('statusPopup');
-            const button = document.getElementById(`statusButton_${id}`);
-            const rect = button.getBoundingClientRect();
-
-            popup.dataset.taskId = id;
-            popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-            popup.style.left = `${rect.left + window.scrollX}px`;
-            popup.classList.toggle('hidden');
-        }
-
-        function actualizarEstado(nuevoEstado) {
-            const popup = document.getElementById('statusPopup');
-            const id = popup.dataset.taskId;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-            fetch(`/tareas/${id}/status`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({ estado: nuevoEstado })
-            })
+    function abrirDetalles(id) {
+        fetch(`/tareas/${id}`)
             .then(response => {
-                if (!response.ok) throw new Error('Error al actualizar');
+                if (!response.ok) throw new Error('Error al cargar');
                 return response.json();
             })
-            .then(data => {
-                const button = document.getElementById(`statusButton_${id}`);
-                button.innerText = nuevoEstado; // Actualiza el texto
-
-                // Actualiza el color
-                button.classList.remove('bg-[#4ade80]', 'bg-[#fb923c]', 'bg-[#38bdf8]', 'bg-slate-400');
-                if (nuevoEstado === 'Terminado') button.classList.add('bg-[#4ade80]');
-                else if (nuevoEstado === 'Pendiente') button.classList.add('bg-[#fb923c]');
-                else if (nuevoEstado === 'En proceso') button.classList.add('bg-[#38bdf8]');
-                else if (nuevoEstado === 'Cancelado') button.classList.add('bg-slate-400');
-
-                popup.classList.add('hidden');
+            .then(task => {
+                document.getElementById('detId').innerText = "#" + String(task.id).padStart(3, '0');
+                document.getElementById('detCliente').innerText = task.cliente;
+                document.getElementById('detTel').innerText = task.telefono || 'N/A';
+                document.getElementById('detPedido').innerText = task.nombre_pedido;
+                document.getElementById('detFechaToma').innerText = task.fecha_toma;
+                
+                // Usamos la fecha formateada si viene del servidor, o la normal
+                document.getElementById('detFechaEntrega').innerText = task.fecha_entrega_formateada || task.fecha_entrega;
+                
+                document.getElementById('detDesc').innerText = task.detalles_adicionales || 'N/A';
+                toggleModal('modalDetallesTarea');
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('No se pudo actualizar el estado.');
+                alert('No se pudieron cargar los detalles.');
             });
-        }
+    }
 
-        // Cierra el menú de estado si haces clic afuera
-        document.addEventListener('click', function(event) {
-            const popup = document.getElementById('statusPopup');
-            const isClickInside = popup.contains(event.target) || event.target.tagName === 'BUTTON';
-            if (!isClickInside && !popup.classList.contains('hidden')) {
-                popup.classList.add('hidden');
-            }
+    function cambiarEstado(id) {
+        const popup = document.getElementById('statusPopup');
+        const button = document.getElementById(`statusButton_${id}`);
+        const rect = button.getBoundingClientRect();
+
+        popup.dataset.taskId = id;
+        popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        popup.style.left = `${rect.left + window.scrollX}px`;
+        popup.classList.toggle('hidden');
+    }
+
+    function actualizarEstado(nuevoEstado) {
+        const popup = document.getElementById('statusPopup');
+        const id = popup.dataset.taskId;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        fetch(`/tareas/${id}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({ estado: nuevoEstado })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Error al actualizar');
+            return response.json();
+        })
+        .then(data => {
+            const button = document.getElementById(`statusButton_${id}`);
+            button.innerText = nuevoEstado;
+
+            button.classList.remove('bg-[#4ade80]', 'bg-[#fb923c]', 'bg-[#38bdf8]', 'bg-slate-400');
+            if (nuevoEstado === 'Terminado') button.classList.add('bg-[#4ade80]');
+            else if (nuevoEstado === 'Pendiente') button.classList.add('bg-[#fb923c]');
+            else if (nuevoEstado === 'En proceso') button.classList.add('bg-[#38bdf8]');
+            else if (nuevoEstado === 'Cancelado') button.classList.add('bg-slate-400');
+
+            popup.classList.add('hidden');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('No se pudo actualizar el estado.');
         });
+    }
+
+    // --- CERRAR POPUP AL HACER CLIC FUERA ---
+    document.addEventListener('click', function(event) {
+        const popup = document.getElementById('statusPopup');
+        const isClickInside = popup.contains(event.target) || event.target.tagName === 'BUTTON';
+        if (!isClickInside && !popup.classList.contains('hidden')) {
+            popup.classList.add('hidden');
+        }
+    });
+
+    // --- RELOJ EN TIEMPO REAL ---
+    function actualizarReloj() {
+        const reloj = document.getElementById('reloj-macdash');
+        if(!reloj) return;
+
+        const ahora = new Date();
+        let horas = ahora.getHours();
+        let minutos = ahora.getMinutes();
+        let ampm = horas >= 12 ? 'pm' : 'am';
+
+        horas = horas % 12;
+        horas = horas ? horas : 12; 
+        minutos = minutos < 10 ? '0' + minutos : minutos;
+
+        reloj.innerText = horas + ':' + minutos + ' ' + ampm;
+    }
+
+    setInterval(actualizarReloj, 1000);
+    actualizarReloj();
     </script>
 </body>
 </html>

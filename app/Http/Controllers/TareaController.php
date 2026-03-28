@@ -33,14 +33,16 @@ class TareaController extends Controller
         return view('welcome', compact('tareas', 'sort_by', 'order'));
     }
 
-    // 1. Este método responde los detalles de una tarea en formato JSON
+        // 1. Este método responde los detalles de una tarea en formato JSON
     public function show(Tarea $tarea)
     {
-        // El model binding automático de Laravel encuentra la tarea.
-        // Agregamos la "Fecha de toma" automática formateada
-        $tarea->fecha_toma = Carbon::parse($tarea->created_at)->format('d/m/Y h:i a');
+        // 1. FECHA DE TOMA FORMATEADA (Con texto y hora)
+        $tarea->fecha_toma = \Carbon\Carbon::parse($tarea->created_at)->format('j') . ' de ' . ucfirst(\Carbon\Carbon::parse($tarea->created_at)->locale('es')->monthName) . ' ' . \Carbon\Carbon::parse($tarea->created_at)->format('Y, h:i a');
         
-        // Devolvemos la tarea completa como JSON
+        // 2. FECHA DE ENTREGA FORMATEADA (Solo texto)
+        $tarea->fecha_entrega_formateada = \Carbon\Carbon::parse($tarea->fecha_entrega)->format('j') . ' de ' . ucfirst(\Carbon\Carbon::parse($tarea->fecha_entrega)->locale('es')->monthName) . ' ' . \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y');
+        
+        // Devolvemos la tarea completa
         return response()->json($tarea);
     }
 
