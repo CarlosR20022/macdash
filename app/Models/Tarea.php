@@ -12,6 +12,21 @@ class Tarea extends Model
         'fecha_entrega',
         'estado',
         'detalles_adicionales',
-        'telefono'
+        'telefono',
+        'user_id',
+        'trabajador_id',
+        'prioridad'
     ];
+
+    // Quién la autorizó (creó)
+    public function usuario()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Quién la está trabajando / actualizó el estado
+    public function trabajador()
+    {
+        return $this->belongsTo(User::class, 'trabajador_id');
+    }
 }

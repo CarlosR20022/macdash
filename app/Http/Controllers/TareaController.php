@@ -4,77 +4,93 @@ namespace App\Http\Controllers;
 
 use App\Models\Tarea;
 use Illuminate\Http\Request;
-use Carbon\Carbon; // IMPORTANTE: Librería para manejar fechas
+use Carbon\Carbon;
 
 class TareaController extends Controller
 {
-    // Mostrar la tabla con todas las tareas
-    public function index(Request $request)
+    public function index()
     {
-        // Obtenemos la columna y el orden de la URL, por defecto: 'created_at' y 'desc'
-        $sort_by = $request->get('sort_by', 'id'); 
-        $order = $request->get('order', 'desc');
+        $tareas = Tarea::with(['usuario', 'trabajador'])->orderBy('id', 'desc')->get();
 
-        // Validamos para evitar errores si alguien escribe algo raro en la URL
-        $valid_columns = ['id', 'fecha_entrega', 'created_at'];
-        $valid_orders = ['asc', 'desc'];
-
-        if (!in_array($sort_by, $valid_columns)) {
-            $sort_by = 'id';
+        foreach ($tareas as $tarea) {
+            // Lógica de Prioridad según el Estado
+            if ($tarea->estado == 'Terminado') {
+                $prioridad = 'Terminada';
+            } elseif ($tarea->estado == 'Cancelado') {
+                $prioridad = 'Cancelada';
+            } else {
+                // Solo si está Pendiente o En Proceso, calculamos los días
+                $diasRestantes = Carbon::now()->startOfDay()->diffInDays(Carbon::parse($tarea->fecha_entrega)->startOfDay(), false);
+                $prioridad = $tarea->prioridad; 
+                if (!$prioridad) { 
+                    $prioridad = $diasRestantes <= 2 ? 'Alta' : ($diasRestantes <= 10 ? 'Media' : 'Baja');
+                }
+            }
+            $tarea->prioridad_calculada = $prioridad; 
         }
-        if (!in_array($order, $valid_orders)) {
-            $order = 'desc';
-        }
 
-        // Hacemos la consulta a la base de datos
-        $tareas = Tarea::orderBy($sort_by, $order)->get();
-
-        // Enviamos las variables a la vista para saber cómo están ordenados actualmente
-        return view('welcome', compact('tareas', 'sort_by', 'order'));
+        return view('welcome', compact('tareas'));
     }
 
-        // 1. Este método responde los detalles de una tarea en formato JSON
     public function show(Tarea $tarea)
     {
-        // 1. FECHA DE TOMA FORMATEADA (Con texto y hora)
-        $tarea->fecha_toma = \Carbon\Carbon::parse($tarea->created_at)->format('j') . ' de ' . ucfirst(\Carbon\Carbon::parse($tarea->created_at)->locale('es')->monthName) . ' ' . \Carbon\Carbon::parse($tarea->created_at)->format('Y, h:i a');
-        
-        // 2. FECHA DE ENTREGA FORMATEADA (Solo texto)
-        $tarea->fecha_entrega_formateada = \Carbon\Carbon::parse($tarea->fecha_entrega)->format('j') . ' de ' . ucfirst(\Carbon\Carbon::parse($tarea->fecha_entrega)->locale('es')->monthName) . ' ' . \Carbon\Carbon::parse($tarea->fecha_entrega)->format('Y');
-        
-        // Devolvemos la tarea completa
+        $tarea->load(['usuario', 'trabajador']);
+        $tarea->autorizo = $tarea->usuario ? $tarea->usuario->nombre_completo : 'Desconocido';
+        $tarea->encargado = ($tarea->estado !== 'Pendiente' && $tarea->trabajador) ? $tarea->trabajador->nombre_completo : 'Aún sin asignar';
+        $tarea->fecha_toma = Carbon::parse($tarea->created_at)->format('j') . ' de ' . ucfirst(Carbon::parse($tarea->created_at)->locale('es')->monthName) . ' ' . Carbon::parse($tarea->created_at)->format('Y, h:i a');
+        $tarea->fecha_entrega_formateada = Carbon::parse($tarea->fecha_entrega)->format('j') . ' de ' . ucfirst(Carbon::parse($tarea->fecha_entrega)->locale('es')->monthName) . ' ' . Carbon::parse($tarea->fecha_entrega)->format('Y');
+
+        if ($tarea->estado == 'Terminado') {
+            $prioridad = 'Terminada';
+        } elseif ($tarea->estado == 'Cancelado') {
+            $prioridad = 'Cancelada';
+        } else {
+            $diasRestantes = Carbon::now()->startOfDay()->diffInDays(Carbon::parse($tarea->fecha_entrega)->startOfDay(), false);
+            $prioridad = $tarea->prioridad;
+            if (!$prioridad) {
+                $prioridad = $diasRestantes <= 2 ? 'Alta' : ($diasRestantes <= 10 ? 'Media' : 'Baja');
+            }
+        }
+        $tarea->prioridad_calculada = $prioridad;
+
         return response()->json($tarea);
     }
 
-    // 2. Este método actualiza el estado de una tarea
     public function updateStatus(Request $request, Tarea $tarea)
     {
         $newStatus = $request->input('estado');
         $valid_statuses = ['Pendiente', 'En proceso', 'Terminado', 'Cancelado'];
 
-        if (!in_array($newStatus, $valid_statuses)) {
-            return response()->json(['error' => 'Estado no válido.'], 400);
-        }
+        if (!in_array($newStatus, $valid_statuses)) return response()->json(['error' => 'Estado no válido.'], 400);
 
         $tarea->estado = $newStatus;
+        if ($newStatus == 'Pendiente') {
+            $tarea->trabajador_id = null;
+        } else {
+            $tarea->trabajador_id = auth()->id(); 
+        }
         $tarea->save();
 
-        return response()->json(['success' => 'Estado actualizado con éxito.']);
+        return response()->json(['success' => 'Estado actualizado.']);
     }
 
-    // Guardar una nueva tarea (desde el botón "Nueva Tarea")
     public function store(Request $request)
     {
         $request->validate([
             'cliente' => 'required',
             'nombre_pedido' => 'required',
             'fecha_entrega' => 'required',
-            'detalles_adicionales' => 'required',
         ]);
 
-        $request->merge(['estado' => 'Pendiente']);
+        $datos = $request->all();
+        $datos['estado'] = 'Pendiente';
+        $datos['user_id'] = auth()->id();
+        
+        if (isset($datos['prioridad']) && $datos['prioridad'] == 'Automatica') {
+            $datos['prioridad'] = null;
+        }
 
-        Tarea::create($request->all());
+        Tarea::create($datos);
 
         return redirect()->back()->with('success', 'Tarea creada con éxito');
     }

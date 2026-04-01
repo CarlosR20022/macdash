@@ -25,4 +25,10 @@ Route::middleware(['auth', PreventBackHistory::class])->group(function () {
     // Trabajadores (ESTA ES LA RUTA QUE FALTABA)
     Route::post('/usuarios', [UserController::class, 'store'])->name('usuarios.store');
 
+    // Trabajadores
+    Route::post('/usuarios', [UserController::class, 'store'])->name('usuarios.store');
+    
+    // --> NUEVA RUTA PARA EDITAR <--
+    Route::put('/usuarios/{usuario}', [UserController::class, 'update'])->name('usuarios.update');
+
 });
