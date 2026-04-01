@@ -28,7 +28,7 @@
             
             <div>
                 <label class="block text-[10px] font-black uppercase text-slate-500 mb-2">Usuario</label>
-                <input type="text" name="name" value="{{ old('name') }}" required autofocus
+                <input type="text" name="username" value="{{ old('username') }}" required autofocus
                     class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500 outline-none transition-all text-sm"
                     placeholder="Ingresa tu usuario">
             </div>

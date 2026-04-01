@@ -72,6 +72,8 @@ class TareaController extends Controller
             'detalles_adicionales' => 'required',
         ]);
 
+        $request->merge(['estado' => 'Pendiente']);
+
         Tarea::create($request->all());
 
         return redirect()->back()->with('success', 'Tarea creada con éxito');

@@ -14,22 +14,22 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // 1. Validamos que nos envíen 'name' y 'password'
+        // 1. Validamos que nos manden USUARIO y contraseña
         $credentials = $request->validate([
-            'name' => ['required', 'string'],
-            'password' => ['required', 'string'],
+            'username' => ['required', 'string'], // <-- Cambiamos 'email' por 'username'
+            'password' => ['required'],
         ]);
 
-        // 2. Intentamos iniciar sesión con esas credenciales
+        // 2. Intentamos iniciar sesión con esos datos
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('/'); // Te manda a tu panel MacDash
+            return redirect()->intended('/'); // Te manda al panel de MacDash
         }
 
-        // 3. Si falla, devolvemos error
+        // 3. Si falla, regresamos el error al campo del usuario
         return back()->withErrors([
-            'name' => 'El usuario o la contraseña son incorrectos.',
-        ])->onlyInput('name');
+            'username' => 'El usuario o la contraseña son incorrectos.',
+        ])->onlyInput('username');
     }
 
     public function logout(Request $request)

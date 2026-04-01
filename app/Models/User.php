@@ -20,8 +20,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'apellido_paterno',   // <-- Nuevo
+        'apellido_materno',   // <-- Nuevo
+        'username',           // <-- Nuevo
         'email',
         'password',
+        'role_id',            // <-- Nuevo
     ];
 
     /**
@@ -45,5 +49,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * ATAJO: Obtener el nombre completo del usuario.
+     * Esto te servirá para mostrarlo en la esquina superior del panel.
+     */
+    public function getNombreCompletoAttribute()
+    {
+        // trim() quita los espacios extra por si alguien no tiene apellido materno
+        return trim("{$this->name} {$this->apellido_paterno} {$this->apellido_materno}");
     }
 }

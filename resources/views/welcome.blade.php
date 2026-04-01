@@ -39,16 +39,24 @@
 
     <main class="flex-1 flex flex-col min-w-0 bg-[#0F172A]">
         <header class="h-24 border-b-2 border-white flex items-center justify-between px-10 bg-[#0F172A] z-10 relative">
-            <input type="text" placeholder="BUSCAR TAREA O CLIENTE" class="bg-slate-200 text-slate-800 placeholder-slate-500 rounded-lg px-4 py-3 w-[400px] focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-base">
+            <input type="text" id="buscadorTareas" placeholder="BUSCAR TAREA O CLIENTE" class="bg-slate-200 text-slate-800 placeholder-slate-500 rounded-lg px-4 py-3 w-[400px] focus:outline-none focus:ring-2 focus:ring-sky-500 font-semibold text-base">
             
-            <div class="flex items-center gap-8">
-                <span id="reloj-macdash" class="text-2xl font-medium">Cargando...</span>
+            <div class="flex items-center gap-6">
+                
+                @if(Auth::user()->role_id == 1)
+                <button onclick="toggleModal('modalNuevoUsuario')" class="bg-[#10B981] hover:bg-[#059669] text-black border-2 border-black rounded-md px-3 py-1.5 text-sm font-bold flex items-center gap-1.5 shadow-[2px_2px_0_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none transition-all whitespace-nowrap">
+                    👤 Trabajadores
+                </button>
+                @endif
+
+                <span id="reloj-macdash" class="text-xl font-medium whitespace-nowrap min-w-[90px] text-center">Cargando...</span>
+                
                 <div class="flex items-center gap-4">
                     <img src="{{ asset('img/perfil.png') }}" alt="Avatar" class="w-12 h-12 rounded-full border-2 border-slate-400">
-                    <span class="font-bold text-xl">{{ Auth::user()->name }}</span>                    
+                    <span class="font-bold text-xl whitespace-nowrap">{{ Auth::user()->nombre_completo ?? Auth::user()->name }}</span>                    
                     <form action="{{ route('logout') }}" method="POST" class="ml-2">
                         @csrf
-                        <button type="submit" class="text-sm text-red-400 hover:text-red-300 font-bold underline">Salir</button>
+                        <button type="submit" class="text-sm text-red-400 hover:text-red-300 font-bold underline whitespace-nowrap">Salir</button>
                     </form>
                 </div>
             </div>
@@ -207,6 +215,49 @@
             <div class="flex justify-end mt-8 border-t border-slate-700 pt-6 gap-3">
                 <button type="button" onclick="toggleModal('modalDetallesTarea')" class="px-6 py-2.5 text-slate-400 text-xs font-bold uppercase tracking-wider">CERRAR</button>
             </div>
+        </div>
+    </div>
+
+    <div id="modalNuevoUsuario" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50">
+        <div class="bg-[#1F2937] w-full max-w-lg rounded-xl border-2 border-slate-600 shadow-2xl p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    👤 Registrar Trabajador
+                </h3>
+                <button onclick="toggleModal('modalNuevoUsuario')" class="text-slate-400 hover:text-white font-bold text-xl">✕</button>
+            </div>
+
+            <form action="{{ route('usuarios.store') }}" method="POST" class="space-y-4">
+                @csrf
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Nombre(s)</label>
+                        <input type="text" name="name" required class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Apellido Paterno</label>
+                        <input type="text" name="apellido_paterno" required class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Apellido Materno</label>
+                        <input type="text" name="apellido_materno" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Usuario (Para Login)</label>
+                        <input type="text" name="username" required placeholder="Ej. juanperez" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Contraseña</label>
+                        <input type="password" name="password" required class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-white outline-none focus:border-sky-500">
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-4">
+                    <button type="submit" class="bg-[#4ade80] hover:bg-[#22c55e] text-black border-2 border-black shadow-[2px_2px_0_rgba(0,0,0,1)] px-6 py-2 rounded font-bold transition-transform active:translate-y-1 active:shadow-none">
+                        GUARDAR TRABAJADOR
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
