@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tarea;
+use App\Models\HistorialTarea;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -11,25 +12,32 @@ class TareaController extends Controller
     public function index()
     {
         $tareas = Tarea::with(['usuario', 'trabajador'])->orderBy('id', 'desc')->get();
+        $urgentes = collect(); // Aquí guardaremos las tareas críticas
 
         foreach ($tareas as $tarea) {
-            // Lógica de Prioridad según el Estado
             if ($tarea->estado == 'Terminado') {
                 $prioridad = 'Terminada';
             } elseif ($tarea->estado == 'Cancelado') {
                 $prioridad = 'Cancelada';
             } else {
-                // Solo si está Pendiente o En Proceso, calculamos los días
                 $diasRestantes = Carbon::now()->startOfDay()->diffInDays(Carbon::parse($tarea->fecha_entrega)->startOfDay(), false);
                 $prioridad = $tarea->prioridad; 
                 if (!$prioridad) { 
                     $prioridad = $diasRestantes <= 2 ? 'Alta' : ($diasRestantes <= 10 ? 'Media' : 'Baja');
                 }
+                
+                // Si la prioridad es Alta, la agregamos a la lista de Urgencias
+                if ($prioridad == 'Alta') {
+                    $urgentes->push($tarea);
+                }
             }
             $tarea->prioridad_calculada = $prioridad; 
         }
 
-        return view('welcome', compact('tareas'));
+        // Obtenemos los últimos 50 movimientos del historial
+        $historial = HistorialTarea::with(['usuario'])->orderBy('id', 'desc')->take(50)->get();
+
+        return view('welcome', compact('tareas', 'urgentes', 'historial'));
     }
 
     public function show(Tarea $tarea)
@@ -63,13 +71,23 @@ class TareaController extends Controller
 
         if (!in_array($newStatus, $valid_statuses)) return response()->json(['error' => 'Estado no válido.'], 400);
 
+        $estadoAnterior = $tarea->estado;
         $tarea->estado = $newStatus;
+
         if ($newStatus == 'Pendiente') {
             $tarea->trabajador_id = null;
         } else {
             $tarea->trabajador_id = auth()->id(); 
         }
         $tarea->save();
+
+        // MAGIA: Guardamos el cambio en el historial automáticamente
+        HistorialTarea::create([
+            'tarea_id' => $tarea->id,
+            'user_id' => auth()->id(),
+            'accion' => 'Cambio de Estado',
+            'detalles' => "cambió la tarea a '{$newStatus}'"
+        ]);
 
         return response()->json(['success' => 'Estado actualizado.']);
     }
@@ -90,7 +108,15 @@ class TareaController extends Controller
             $datos['prioridad'] = null;
         }
 
-        Tarea::create($datos);
+        $tareaNueva = Tarea::create($datos);
+
+        // MAGIA: Guardamos la creación de la tarea en el historial
+        HistorialTarea::create([
+            'tarea_id' => $tareaNueva->id,
+            'user_id' => auth()->id(),
+            'accion' => 'Creación',
+            'detalles' => "creó la nueva tarea"
+        ]);
 
         return redirect()->back()->with('success', 'Tarea creada con éxito');
     }
