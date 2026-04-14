@@ -15,7 +15,7 @@ echo " Simplemente CIERRA ESTA VENTANA NEGRA.  "
 echo "========================================="
 
 # Espera 2 segundos en el fondo y abre el navegador PREDETERMINADO de la Mac
-(sleep 2 && open http://127.0.0.1:8000) &
+(sleep 3 && open http://127.0.0.1:8000) &
 
 # Ejecutamos Laravel
 php artisan serve

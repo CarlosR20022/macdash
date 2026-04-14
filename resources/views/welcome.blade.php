@@ -678,7 +678,7 @@
             generarCalendario(); 
         }
     });
-
+    
     function cambiarVista(vista) {
         const divTabla = document.getElementById('vista-tabla'); 
         const divCalendario = document.getElementById('vista-calendario');
