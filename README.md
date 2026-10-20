@@ -13,3 +13,18 @@ Despliegue: Windows Batch Scripts (.bat)
 
 Instalación y Uso
 Clona este repositorio:
+https://github.com/CarlosR20022/macdash.git
+
+Instala las dependencias de PHP:
+composer install
+
+Configura tu entorno y genera la clave de la aplicación:
+cp .env.example .env
+php artisan key:generate
+
+Ejecuta las migraciones para preparar la base de datos:
+php artisan migrate
+
+Inicialización rápida (Windows): Ejecuta el script .bat incluido en la raíz del proyecto para iniciar el servidor local de Laravel y abrir el sistema sin usar la terminal.
+
+Desarrollado por CarlosR20022.
